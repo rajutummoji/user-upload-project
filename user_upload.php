@@ -12,6 +12,11 @@ if (isset($options['help'])) {
     displayhelp();
     exit;
 }
+$dbuser = $options['u'] ?? null;
+$dbpass = $options['p'] ?? null;
+$dbhost = $options['h'] ?? 'localhost';
+$csvfile = $options['file'] ?? null;
+
 // Display help
 function displayhelp() {
     echo "Usage:\n";
@@ -57,3 +62,50 @@ function createuserstable($dbuser, $dbpass, $dbhost) {
         echo "Error creating table: " . $e->getMessage() . "\n";
     }
 }
+
+// Process CSV
+function processcsvfile($csvfile, $dbuser, $dbpass, $dbhost, $dryrun) {
+    global $errorlog, $summary;
+
+    if (!file_exists($csvfile)) {
+        echo "Error: File '{$csvfile}' not found.\n";
+        exit(1);
+    }
+
+    if (($handle = fopen($csvfile, "r")) !== false) {
+
+        $pdo = null;
+
+        if (!$dryrun) {
+            if (!$dbuser || !$dbpass) {
+                echo "Error: Database credentials required.\n";
+                exit(1);
+            }
+            $pdo = getpdoconnection($dbhost, $dbuser, $dbpass);
+        }
+
+        while (($data = fgetcsv($handle)) !== false) {
+            if ($row === 1) continue; // Skip header
+        }
+
+        fclose($handle);
+        echo "Processing completed.\n";
+
+    } else {
+        echo "Failed to open file: {$csvfile}\n";
+        exit(1);
+    }
+}
+
+// Execution flow
+if (isset($options['create_table'])) {
+    createuserstable($dbuser, $dbpass, $dbhost);
+    exit;
+}
+
+if (!$csvfile) {
+    echo "Error: No CSV file provided. Use --file=filename.csv\n";
+    exit(1);
+}
+
+processcsvfile($csvfile, $dbuser, $dbpass, $dbhost, isset($options['dry_run']));
